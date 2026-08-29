@@ -75,7 +75,7 @@ print(dataset["match_result"].value_counts())
 # Separate features and target
 #----------------------------------------------
 
-X = dataset.drop(columns = ["Date","match_result"])
+X = dataset.drop(columns = ["Date", "home_team", "away_team", "match_result"])
 y = dataset["match_result"]
 
 print("\nFeature shape: ")
@@ -101,7 +101,7 @@ dataset = dataset.sort_values("Date").reset_index(drop = True)
 # Recreate features and target after sorting
 #-------------------------------------------------
 
-X = dataset.drop(columns = ["Date", "match_result"])
+X = dataset.drop(columns = ["Date", "home_team", "away_team", "match_result"])
 y = dataset["match_result"]
 
 #-------------------------------------------------

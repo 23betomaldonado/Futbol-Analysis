@@ -67,7 +67,7 @@ print("\nDataset sorted chronologically.")
 # Separate features and target
 #---------------------------------------------------------------------
 
-X = dataset.drop(columns = ["Date","match_result"])
+X = dataset.drop(columns = ["Date", "home_team", "away_team", "match_result"])
 y = dataset["match_result"]
 
 print("\nFeature shape: ")

@@ -67,7 +67,7 @@ print("Shape: ", dataset.shape)
 # Separate features and target
 #-------------------------------------------------------------------------------------
 
-X = dataset.drop(columns = ["Date", "match_result"])
+X = dataset.drop(columns = ["Date", "home_team", "away_team", "match_result"])
 y = dataset["match_result"]
 
 feature_names = X.columns.tolist()
@@ -238,6 +238,8 @@ for model_name, model in FINAL_MODELS:
     frame = pd.DataFrame({
         "Model": model_name,
         "Date": dataset["Date"].iloc[split_index:].values,
+        "Home Team": dataset["home_team"].iloc[split_index:].values,
+        "Away_Team":dataset["away_team"].iloc[split_index:].values,
         "Actual Result": y_test.values,
         "Predicted Result": predictions_by_model[model_name],
     })

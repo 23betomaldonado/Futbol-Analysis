@@ -731,7 +731,7 @@ else:
 #-------------------------------------------------------------------------------------
 
 training_dataset = matches[
-    ["Date"] + ml_features
+    ["Date", "home_team", "away_team"] + ml_features
 ].copy()
 
 training_dataset["match_result"] = y
@@ -745,6 +745,66 @@ print(training_dataset.shape)
 
 print("\nColumns: ")
 print(training_dataset.columns.tolist())
+
+#----------------------------------------------------------------------
+#  EXPORT CURRENT TEAM FEATURE STATE
+# team_history holds every team's full match record after the loop 
+# finishes. Saving each team's final state lets 10_build feature rows 
+# for 2026 fixtures without re running this whole script.
+#----------------------------------------------------------------------
+
+TEAM_FEATURES_FILE = PROCESSED_DATA / "team_features_current.csv"
+
+team_feature_rows = []
+
+for team, history in team_history.items():
+    if len(history) == 0:
+        continue
+
+    recent_history = history[-RECENT_MATCHES:]
+
+    wins = sum(result["win"] for result in history)
+    goals_scored = sum(result["goals_scored"] for result in history)
+    goals_conceded = sum(result["goals_conceded"] for result in history)
+    
+    recent_wins = sum(result["win"] for result in recent_history)
+    recent_goals_scored = sum(
+        result["goals_scored"] for result in recent_history
+        )
+    recent_goals_conceded = sum(
+        result["goals_conceded"] for result in recent_history
+        )
+    team_feature_rows.append({
+        "team": team,
+        "matches_played" : len(history),
+        "win_rate": wins / len(history),
+        "avg_goals_scored": goals_scored / len(history),
+        "avg_goals_conceded": goals_conceded / len(history),
+        "goal_difference": (goals_scored - goals_conceded) / len(history),
+        "recent_win_rate": recent_wins / len(recent_history),
+        "recent_avg_goals_scored": (recent_goals_scored) 
+                                / len(recent_history),
+        "recent_avg_goals_conceded":(recent_goals_conceded 
+                                / len(recent_history)),
+        "recent_goal_difference":(
+            (recent_goals_scored - recent_goals_conceded) 
+            / len(recent_history)
+            ),
+    })
+
+team_features = pd.DataFrame(team_feature_rows)
+
+team_features = team_features.sort_values(
+    "matches_played",
+    ascending= False
+).reset_index(drop = True)
+
+team_features.to_csv(TEAM_FEATURES_FILE, index= False)
+
+print("\nTeam feature state saved to: ")
+print(TEAM_FEATURES_FILE)
+print("Teams: ", len(team_features))
+
 
 #-------------------------------------------------------------------------------------
 # SAVE DATASET
