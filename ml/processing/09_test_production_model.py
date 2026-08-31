@@ -1,6 +1,6 @@
 #--------------------------------------------------------------------------------
 #
-# 10_test_production_model.py
+# 09_test_production_model.py
 #
 # Test the final production model.
 #
@@ -27,6 +27,7 @@ MODEL_DATA = PROJECT_ROOT / "ml" / "models"
 TRAINING_FILE = PROCESSED_DATA / "training_dataset.csv"
 
 LOGISTIC_MODEL_FILE = MODEL_DATA / "logistic_regression_final.pkl"
+DECISION_TREE_MODEL_FILE = MODEL_DATA / "decision_tree_final.pkl"
 RANDOM_FOREST_MODEL_FILE = MODEL_DATA / "random_forest_final.pkl"
 
 print("\nFile paths configured successfully.")
@@ -56,7 +57,7 @@ print("\nDataset sorted chronologically.")
 # Separate features and target
 #---------------------------------------------------------------------
 
-X = dataset.drop(columns = ["Date","match_result"])
+X = dataset.drop(columns = ["Date","home_team","away_team", "match_result"])
 y = dataset["match_result"]
 
 print("\nFeature shape: ")
