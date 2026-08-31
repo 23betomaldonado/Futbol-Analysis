@@ -1,5 +1,5 @@
 #--------------------------------------------------------------------------------------------
-# 09_finalize_model.py
+# 08_finalize_model.py
 #
 # Finalize the best performing ML model for production use.
 #
@@ -18,7 +18,9 @@ from pathlib import Path
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 
 #----------------------------------------------------------------------------------------
@@ -34,6 +36,7 @@ TRAINING_FILE = PROCESSED_DATA / "training_dataset.csv"
 RESULTS_FILE = PROCESSED_DATA  / "final_model_evaluation.csv"
 
 LOGISTIC_MODEL_FILE = MODEL_DATA / "logistic_regression_final.pkl"
+DECISION_TREE_MODEL_FILE = MODEL_DATA / "decision_tree_final.pkl"
 RANDOM_FOREST_MODEL_FILE = MODEL_DATA / "random_forest_final.pkl"
 
 MODEL_DATA.mkdir(parents = True, exist_ok = True)
@@ -83,7 +86,7 @@ print(y.shape)
 evaluation_results = pd.read_csv(RESULTS_FILE)
 
 evaluation_results = evaluation_results.sort_values(
-       "Accuracy",
+       "Balanced Accuracy",
        ascending= False
 ).reset_index(drop= True)
 
@@ -117,11 +120,22 @@ if best_model_name == "Logistic Regression":
 
     model_file = LOGISTIC_MODEL_FILE
 
+elif best_model_name == "Decision Tree":
+       final_model = Pipeline([
+              ("model", DecisionTreeClassifier(
+                     max_depth = 3,
+                     min_samples_leaf = 1,
+                     min_samples_split =2,
+                     random_state = 42
+              ))
+       ])
+
+
 elif best_model_name == "Random Forest":
        final_model = Pipeline([
               ("model", RandomForestClassifier(
-                     n_estimators = 100,
-                     max_depth = 5,
+                     n_estimators = 300,
+                     max_depth = 20,
                      min_samples_split =2,
                      random_state = 42
               ))
@@ -140,6 +154,10 @@ else:
 #----------------------------------------------------------------------------------------
 # Train final model on full dataset
 #----------------------------------------------------------------------------------------
+# Trains on all the 964 matches, including the test set. That is intentional for a 
+# production model, but it means the accuracy printed below came from the 
+# 80/20 split model, not this one.
+
 print("\nTraining final production model…")
 final_model.fit(X, y)
 print("\nFinal production model trained successfully.")
