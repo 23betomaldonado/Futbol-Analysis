@@ -23,9 +23,41 @@ from pathlib import Path
 #-----------------------------------------------------------------------------------
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 PROCESSED_DATA = PROJECT_ROOT /  "data" / "processed"
+
 MATCHES_FILE = PROCESSED_DATA  /  "matches_cleaned.csv"
+RANKING_2026_FILE = PROCESSED_DATA / "fifa_ranking_2026_cleaned.csv"
+
+TRAINING_DATASET_FILE = PROCESSED_DATA / "training_dataset.csv"
 OUTPUT_FILE = PROCESSED_DATA  / "training_dataset.csv"
+
+print("File paths configured  successfully.")
+#-------------------------------------------------------------------------------------
+# TEAM NAME ALIASAS
+# 
+# Some dataset names for countries have more than one name with the same meaning
+# in this section we will choose one single name to represent the country, an
+# example of this is United States, and USA they are the same but they can be named 
+# differently in different datasets. 
+#-----------------------------------------------------------------------------------
+TEAM_ALIASES = {
+    "United States": "USA",
+    "Bosnia-Herzegovina":"Bosnia and Herzegovina",
+    "Cape Verde": "Cabo Verde",
+    "Czech Republic":"Czechia",
+    "Czechoslovakia": "Czechia",
+    "Zaire": "Congo DR",
+    "West Germany": "Germany",
+    "Germany DR": "Germany",
+    "Soviet Union": "Russia",
+    "South Korea": "Korea Republic",
+    "North Korea": "Korea DPR",
+    "Iran":"IR Iran",
+    "Ivory Coast": "Côte d'Ivoire",
+}
+def canonical_team(name):
+    return TEAM_ALIASES.get(name, name)
 
 #-------------------------------------------------------------------------------------
 # Configuration
@@ -117,6 +149,154 @@ print(
     .mul(100)
     .round(2)
 )
+
+
+#-----------------------------------------------------------------------------------
+# FIFA 2026 RANKING FEATURES
+# 
+# 2026 FIFA ranking is used as a team quality prior.
+#
+# This dataset is recent(2026) than the historical dataset.
+# Therefore, they must be placed as the team strenght prior, 
+# not as part of the historical accurate ranking for each match date.
+#-----------------------------------------------------------------------------------
+
+ranking_2026 = pd.read_csv(RANKING_2026_FILE)
+
+print("\n2026 FIFA ranking loaded successfully.")
+print("Shape: ", ranking_2026.shape)
+
+# this will standardize ranking team names
+ranking_2026["team"] = ranking_2026["team"].str.strip()
+
+# Make sure ranking values are numeric
+ranking_2026["rank"] = pd.to_numeric(
+    ranking_2026["rank"], 
+    errors = "coerce"
+)
+
+ranking_2026["points"] = pd.to_numeric(
+    ranking_2026["points"], 
+    errors = "coerce"
+)
+
+
+#-----------------------------------------------------------------------------------
+# Create ranking lookup dictionaries
+#-----------------------------------------------------------------------------------
+
+ranking_lookup = ranking_2026.set_index("team")["rank"].to_dict()
+points_lookup = ranking_2026.set_index("team")["points"].to_dict()
+
+# worse case scenerio if teams dont exist
+# in the 2026 FIFA ranking dataset.
+worst_rank = ranking_2026["rank"].max() + 1
+
+#-----------------------------------------------------------------------------------
+# Convert historical team names to the names used by FIFA rankings
+#-----------------------------------------------------------------------------------
+
+matches["home_team_ranking_name"] = (
+    matches["home_team"]
+    .map(canonical_team)
+)
+
+matches["away_team_ranking_name"] = (
+    matches["away_team"]
+    .map(canonical_team)
+)
+
+#-----------------------------------------------------------------------------------
+# Add home and away FIFA ranking information
+#-----------------------------------------------------------------------------------
+
+matches["home_rank"] = (
+        matches["home_team_ranking_name"]
+        .map(ranking_lookup)
+)
+
+matches["away_rank"] = (
+        matches["away_team_ranking_name"]
+        .map(ranking_lookup)
+)
+
+matches["home_points"] = (
+        matches["home_team_ranking_name"]
+        .map(points_lookup)
+)
+
+matches["away_points"] = (
+        matches["away_team_ranking_name"]
+        .map(points_lookup)
+)
+
+#-----------------------------------------------------------------------------------
+# Fill teams missing from the 2026 ranking
+#-----------------------------------------------------------------------------------
+
+matches["home_rank"] = matches["home_rank"].fillna(worst_rank)
+matches["away_rank"] = matches["away_rank"].fillna(worst_rank)
+
+matches["home_points"] = matches["home_points"].fillna(0.0)
+matches["away_points"] = matches["away_points"].fillna(0.0)
+
+#-----------------------------------------------------------------------------------
+# Ranking matchup differences
+#
+# Positive rank_difference:
+#     home team has the better FIFA rank.
+#
+# Positive points_difference:
+#     home team has more FIFA ranking points.
+#-----------------------------------------------------------------------------------
+
+matches["rank_difference"] = (
+    matches["away_rank"]
+    -matches["home_rank"]
+)
+
+matches["points_difference"] = (
+    matches["home_points"]
+    -matches["away_points"]
+)
+
+#-----------------------------------------------------------------------------------
+# Ranking Validation
+#-----------------------------------------------------------------------------------
+
+print("\nFIFA ranking featrure validation: ")
+
+print("Worst rank Fallback: ", worst_rank)
+
+print(
+    "Home teams using fallback rank: ",
+    (matches["home_rank"] == worst_rank).sum()
+    )
+
+print(
+    "Away teams using fallback rank: ",
+    (matches["away_rank"] == worst_rank).sum()
+    )
+
+unmatched_ranking_teams = sorted(
+    set(
+        matches.loc[
+            matches["home_rank"] == worst_rank,
+            "home_team"
+        ]
+    )
+    | 
+    set(
+        matches.loc[
+            matches["away_rank"] == worst_rank,
+            "away_team"
+        ]
+    )
+)
+
+print("\nHistorical teams not mapped to a 2026 ranking: ")
+for team in unmatched_ranking_teams:
+    print(" -", team)
 
 #-----------------------------------------------------------------------------------
 # TEAM HISTORY
@@ -539,6 +719,7 @@ ml_features = [
     "home_goal_differences",
     "away_goal_differences",
 
+
     #----------------------------------------------
     # Recent form
     #----------------------------------------------
@@ -571,7 +752,19 @@ ml_features = [
 
     "goal_difference_comparison",
 
-    "recent_goal_difference_comparison"
+    "recent_goal_difference_comparison",
+
+    #-------------------------------------------
+    # FIFA ranking strength
+    #-------------------------------------------
+    "home_rank",
+    "away_rank",
+
+    "home_points",
+    "away_points",
+
+    "rank_difference",
+    "points_difference"
 ]
 
 #-------------------------------------------------------------------------------------
@@ -858,7 +1051,7 @@ print("\nDuplicate rows: ")
 print(duplicate_count)
 
 #-------------------------------------------------------------------------------------
-# TARGER DISTRIIBUTION
+# TARGETS DISTRIIBUTION
 #-------------------------------------------------------------------------------------
 
 print("\nTarget distribution: ")

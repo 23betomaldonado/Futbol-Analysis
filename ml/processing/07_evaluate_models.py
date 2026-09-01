@@ -3,8 +3,8 @@
 #
 # Final evaluation + website artifacts
 #
-# 06_ showed us that tuning gave no real improvement, so this file doesnt retune.
-# It uses the winning parameters from 06_ and produces what the site needs:
+# 06_ found  C= 0.1 improved the model slightly, so this file doesnt retune.
+# It resues the winning parameters rather than searching again.
 #
 # 1. Final metrics for all three models
 # 2. per match predicted probabilities
@@ -67,7 +67,7 @@ print("Shape: ", dataset.shape)
 # Separate features and target
 #-------------------------------------------------------------------------------------
 
-X = dataset.drop(columns = ["Date", "home_team", "away_team", "match_result"])
+X = dataset.drop(columns = ["Date", "home_team", "away_team", "match_result",])
 y = dataset["match_result"]
 
 feature_names = X.columns.tolist()
@@ -96,7 +96,7 @@ print("Testing samples: ", len(X_test))
 logistic_model = Pipeline([
     ("scaler", StandardScaler()),
     ("model", LogisticRegression(
-        C = 1,
+        C = 0.1,
         max_iter=  1000
     ))
 ])
@@ -172,7 +172,7 @@ for model_name, model in FINAL_MODELS:
     )
 
     print("\n" + "=" * 70)
-    print(model_name, "- Confusion Matrix")
+    print(model_name, "- Classification Report")
     print("=" * 70)
     print(
         classification_report(
@@ -183,7 +183,7 @@ for model_name, model in FINAL_MODELS:
         )
     )
 
-    print(model_name, "- Classification Report")
+    print(model_name, "- Confusion Matrix")
     print("Label order: ", CLASS_LABELS)
     print("Rows = actual, Columns = predicted")
     print(
@@ -239,7 +239,7 @@ for model_name, model in FINAL_MODELS:
         "Model": model_name,
         "Date": dataset["Date"].iloc[split_index:].values,
         "Home Team": dataset["home_team"].iloc[split_index:].values,
-        "Away_Team":dataset["away_team"].iloc[split_index:].values,
+        "Away Team":dataset["away_team"].iloc[split_index:].values,
         "Actual Result": y_test.values,
         "Predicted Result": predictions_by_model[model_name],
     })

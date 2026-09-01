@@ -12,6 +12,7 @@
 
 import pandas as pd
 import joblib
+import json
 
 from pathlib import Path
 
@@ -38,6 +39,7 @@ RESULTS_FILE = PROCESSED_DATA  / "final_model_evaluation.csv"
 LOGISTIC_MODEL_FILE = MODEL_DATA / "logistic_regression_final.pkl"
 DECISION_TREE_MODEL_FILE = MODEL_DATA / "decision_tree_final.pkl"
 RANDOM_FOREST_MODEL_FILE = MODEL_DATA / "random_forest_final.pkl"
+FEATURE_FILE = MODEL_DATA / "model_features.json"
 
 MODEL_DATA.mkdir(parents = True, exist_ok = True)
 
@@ -114,7 +116,8 @@ if best_model_name == "Logistic Regression":
     final_model = Pipeline([
         ("scaler", StandardScaler()),
         ("model", LogisticRegression(
-                max_iter = 1000
+              C = 0.1,
+              max_iter = 1000
         ))
     ])
 
@@ -130,6 +133,7 @@ elif best_model_name == "Decision Tree":
               ))
        ])
 
+       model_file = DECISION_TREE_MODEL_FILE
 
 elif best_model_name == "Random Forest":
        final_model = Pipeline([
@@ -172,6 +176,12 @@ joblib.dump(
 
 print("\nFinal model saved to: ")
 print(model_file)
+
+with open(FEATURE_FILE, "w") as f:
+      json.dump(X.columns.tolist(), f, indent = 2)
+
+print("\nFeature list saved to:  ")
+print(FEATURE_FILE)
 
 #----------------------------------------------------------------------------------------
 # Verify saved model
