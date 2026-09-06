@@ -145,8 +145,10 @@ def get_teams():
 #-------------------------------------------------------------------------
 # POST /api/predict
 #
-# Directional. Use this for real fixtures where the schedule decides 
-# which team is listed home. 
+# Symmetric, same as /api/compare. 89% of World Cup matches in the 
+# training data were at neutral venues, so "home team" is really just 
+# listing order rather than a real home advantrage. Both ordering are 
+# averaged so the order teams are passed in does not change the result.
 # 
 # Body:
 #       {"home_team": "Brazil","away_team": "Argentina"}
@@ -165,11 +167,12 @@ def predict(request: PredictRequest):
     # Status 400 = server cant or wont process request because its a 
     # client-side error.
 
-    probabilities = predict_fixtures(
+    probabilities = predict_symmetric(
         model,
         builder,
-        [(request.home_team, request.away_team)],
-    )[0]
+        request.home_team, 
+        request.away_team,
+    )
 
     predicted = max(probabilities, key = probabilities.get)
 
