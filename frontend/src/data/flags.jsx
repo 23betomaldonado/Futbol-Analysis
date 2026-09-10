@@ -32,6 +32,17 @@ function Flag({nation, w = 28}) {
         </svg>
     );
 
+    const H2 = (a, b) => <svg {...vb}><rect width = "30" height = "10" fill = {a} /><rect y = "10" width = "30" height = "10" fill = {b} /> </svg>;
+
+    const star = (cx, cy, r, fill) => (
+        <polygon fill ={fill} points ={Array.from({ length: 10}).map((_, i) =>{
+            const ang =(Math.PI / 5) * i - Math.PI / 2;
+            const rad = i % 2 == 0 ? r : r * 0.42;
+            return `${(cx + rad * Math.cos(ang)).toFixed(2)}, ${(cy + rad * 
+            Math.sin(ang)).toFixed(2)}`;    
+            }).join (" ")} />
+    );
+
     switch(nation){
         case "France": return V3("#0055A4","#fff","#EF4135");
         case "Italy": return V3("#008C45","#F4F5F0","#CD212A");
@@ -51,6 +62,8 @@ function Flag({nation, w = 28}) {
                 <circle cx = "15" cy ="10" r = "4" fill = "#002776" />
             </svg>
         );
+
+
         default: {
             const [a, b] = toneOf(nation);
             return (
