@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;900&family=Bebas+Neue&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-red: #E4000F;
+  --color-blue: #3355F4;
+  --color-green: #00B04A;
+  --color-orange: #FF4713;
+  --color-gold: #D9A428;
+  --color-black: #0D0D0D;
+  --color-grey: #7A7A7A;
+}
+
+body {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  color: var(--color-black);
+}
+
+.fa-heading {
+  font-family: 'Bebas Neue', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.fa-card {
+  background: #fff;
+  border: 8px solid #000;
+  padding: 10px;
+}
