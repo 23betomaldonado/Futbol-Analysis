@@ -1,3 +1,6 @@
+/*
+  This purpose of this file is titles, fonts, font styles, and font size
+  */
 import React from "react";
 
 export function Micro({ children, color = "#7A7A7A" }) {

@@ -79,6 +79,52 @@ model = load_model()
 print("Model and feature builder loaded.")
 print("Teams available: ", len(builder.known_teams))
 
+
+import pandas as pd
+
+#-------------------------------------------------------------------------
+# Load player data once at startup
+#
+# players_cleaned.csv has one row per player PER MATCH (54,600 rows for
+# 1,248 unique players), so this collapses it to one row per player
+# before the app ever serves a request — same "do it once, not per
+# request" principle as the model above.
+#-------------------------------------------------------------------------
+
+_players_raw = pd.read_csv("data/processed/players_cleaned.csv")
+
+_SUM_STATS = [
+    "goals", "assists", "shots", "shots_on_target", "key_passes",
+    "successful_passes", "total_passes", "dribbles_attempted",
+    "successful_dribbles", "crosses", "successful_crosses", "tackles",
+    "interceptions", "clearances", "blocks", "aerial_duels_won",
+    "aerial_duels_lost", "recoveries", "defensive_actions",
+    "fouls_committed", "fouls_suffered", "yellow_cards", "red_cards",
+    "offsides", "minutes_played",
+]
+
+_MEAN_STATS = [
+    "pass_accuracy", "player_rating", "performance_score",
+    "distance_covered_km", "expected_goals_xg", "expected_assists_xa",
+]
+
+_agg_dict = {stat: "sum" for stat in _SUM_STATS}
+_agg_dict.update({stat: "mean" for stat in _MEAN_STATS})
+
+_players_grouped = _players_raw.groupby("player_id").agg({
+    "player_name": "first", "nationality": "first", "team": "first",
+    "position": "first", "age": "first", "height_cm": "first",
+    "weight_kg": "first", "jersey_number": "first",
+    "market_value_eur": "first",
+    **_agg_dict,
+}).reset_index()
+
+_players_grouped["pass_accuracy"] = _players_grouped["pass_accuracy"].round(1)
+_players_grouped["player_rating"] = _players_grouped["player_rating"].round(1)
+_players_grouped["distance_covered_km"] = _players_grouped["distance_covered_km"].round(1)
+
+PLAYERS_DATA = _players_grouped.to_dict(orient="records")
+print("Players available: ", len(PLAYERS_DATA))
 #-------------------------------------------------------------------------
 # Request bodies
 #-------------------------------------------------------------------------
@@ -230,4 +276,20 @@ def compare(request: CompareRequest):
             "Averaged accross both ordering so the pick order doesnt"
             "affect the result"
             ),
+    }
+
+#-------------------------------------------------------------------------
+# GET /api/players
+#
+# One entry per player, aggregated across every match in the tournament.
+# Same synthetic-data caveat as before — player_performance.xlsx has
+# generated names, not real footballers. Real aggregation, fake underlying
+# people.
+#-------------------------------------------------------------------------
+
+@app.get("/api/players")
+def get_players():
+    return {
+        "count": len(PLAYERS_DATA),
+        "players": PLAYERS_DATA,
     }

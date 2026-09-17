@@ -50,3 +50,35 @@ export const TEAM_APPEARANCES = [
   { nation: "Cameroon", apps: 8 },
   { nation: "Scotland", apps: 8 },
 ];
+
+// Trimmed for now — same approach as TOURNAMENTS and TEAM_APPEARANCES were
+// at first. We'll expand this to the full 86-nation roster once SearchSelect
+// itself is confirmed working.
+export const ALL_TEAMS = [
+  "Brazil", "Argentina", "Germany", "France", "Spain", "Italy",
+  "England", "Netherlands", "Portugal", "Uruguay", "Belgium", "Mexico",
+];
+
+export function titlesOf(team) {
+  return TOURNAMENTS.filter((t) => t.champion === team).length;
+}
+
+export function appsOf(team) {
+  const found = TEAM_APPEARANCES.find((t) => t.nation === team);
+  return found ? found.apps : 0;
+}
+
+// PLACEHOLDER — rough math from titles + appearances, not your trained
+// model. This is exactly the function that gets deleted and replaced with
+// a real fetch('/api/predict', ...) call once your backend is running.
+export function computePrediction(teamA, teamB) {
+  const scoreA = titlesOf(teamA) * 15 + appsOf(teamA);
+  const scoreB = titlesOf(teamB) * 15 + appsOf(teamB);
+  const total = scoreA + scoreB;
+
+  const home = Math.round((scoreA / total) * 70);
+  const away = Math.round((scoreB / total) * 70);
+  const draw = 100 - home - away;
+
+  return { home, draw, away };
+}
